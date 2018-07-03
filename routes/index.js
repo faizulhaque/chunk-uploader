@@ -6,7 +6,7 @@ var s3 = new AWS.S3({
   region: 'region',
   accessKeyId: 'accessKeyId',
   secretAccessKey: 'secretAccessKey'
-})
+});
 var bucket = 'bucket'; // AWS S3 Bucket Name
 var minLimit = 5 * 1024 * 1024; // 5MB Minimum limit of AWS S3 for chunk upload
 
@@ -120,7 +120,7 @@ function uploadFile(data, callback) {
     } else {
       callback(data);
     }
-  })
+  });
 }
 
 module.exports = router;
