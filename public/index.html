@@ -1,0 +1,89 @@
+<html>
+
+<head>
+  <script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+    crossorigin="anonymous"></script>
+  <script type="text/javascript">
+    var reader = {};
+    var file = {};
+    var sliceSize = 5 * 1024 * 1024;
+
+    $(document).ready(function () {
+      $("#submit").on('click', function () {
+        var fileObject = $("#file");
+        if (fileObject && fileObject[0] && fileObject[0].files && fileObject[0].files.length > 0) {
+          files = fileObject[0].files;
+          reader = new FileReader();
+          startUploading(0, files);
+          $('#dbi-upload-progress').html('selected');
+        } else {
+          $('#dbi-upload-progress').html('not selected');
+        }
+      });
+    });
+    function startUploading(index, files) {
+      if (files[index]) {
+        $('#dbi-upload-progress').html("uploading file: " + (index + 1));
+        file = files[index];
+        uploadFile(0, index);
+      } else {
+        console.log("uploading completed");
+      }
+    }
+    function uploadFile(start, fileIndex, data) {
+      var nextSlice = start + sliceSize + 1;
+      var blob = file.slice(start, nextSlice);
+      reader.onloadend = function (event) {
+        if (event.target.readyState !== FileReader.DONE) {
+          return;
+        }
+
+        data = data || {
+          totalSize: file.size,
+          fileName: file.name,
+          fileType: file.type
+        };
+        data.content = event.target.result;
+
+        $.ajax({
+          url: '/u',
+          type: 'POST',
+          dataType: 'json',
+          cache: false,
+          data: {
+            data: data
+          },
+          error: function (jqXHR, textStatus, errorThrown) {
+            console.log(jqXHR, textStatus, errorThrown);
+          },
+          success: function (response) {
+            var sizeDone = start + sliceSize;
+            var percentDone = Math.floor((sizeDone / file.size) * 100);
+
+            if (nextSlice < file.size) {
+              // Update upload progress
+              $('#dbi-upload-progress').html('Uploading File - ' + percentDone + '%');
+
+              // More to upload, call function recursively
+              uploadFile(nextSlice, fileIndex, response);
+            } else {
+              // Update upload progress
+              $('#dbi-upload-progress').html('Upload Complete!');
+              startUploading(fileIndex + 1);
+            }
+          }
+        });
+      };
+      reader.readAsDataURL(blob);
+    }
+  </script>
+</head>
+
+<body>
+  <input type="file" id="file" multi="false" />
+  <input type="button" id="submit" value="submit" />
+  <p id="dbi-upload-progress">Please select a file and click "Upload" to continue.</p>
+
+</body>
+
+</html>
